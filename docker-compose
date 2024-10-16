@@ -1,0 +1,97 @@
+version: '3'
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - js7network
+    environment:
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --locale=ja_JP.UTF-8"
+      POSTGRES_USER: js7user
+      POSTGRES_PASSWORD: js7password
+      POSTGRES_DB: js7db
+    restart: "no"
+
+  js7-joc-primary:
+    depends_on:
+      - db
+    image: sosberlin/js7:joc-${JS7VERSION}
+    hostname: js7-joc-primary
+    ports:
+      - "4446:4446"
+    volumes:
+      - js7-joc-primary-config:/var/sos-berlin.com/js7/joc/resources/joc
+      - js7-joc-primary-logs:/var/log/sos-berlin.com/js7/joc
+    networks:
+      - js7network
+    environment:
+      RUN_JS_JAVA_OPTIONS: -Xmx256m
+      RUN_JS_USER_ID: "${JS7USERID}:${JS7GROUPID}"
+    restart: "no"
+
+  js7-controller-primary:
+    image: sosberlin/js7:controller-${JS7VERSION}
+    hostname: js7-controller-primary
+    volumes:
+      - js7-controller-primary:/var/sos-berlin.com/js7/controller
+    networks:
+      - js7network
+    environment:
+      RUN_JS_JAVA_OPTIONS: -Xmx256m
+      RUN_JS_USER_ID: "${JS7USERID}:${JS7GROUPID}"
+    restart: "no"
+
+  js7-agent-primary:
+    image: sosberlin/js7:agent-${JS7VERSION}
+    hostname: js7-agent-primary
+    volumes:
+      - js7-agent-primary:/var/sos-berlin.com/js7/agent/
+    networks:
+      - js7network
+    environment:
+      RUN_JS_JAVA_OPTIONS: -Xmx256m
+      RUN_JS_USER_ID: "${JS7USERID}:${JS7GROUPID}"
+    restart: "no"
+
+volumes:
+  db_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/db_data
+      o: bind
+
+  js7-joc-primary-config:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/js7-joc-primary-config
+      o: bind
+
+  js7-joc-primary-logs:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/js7-joc-primary-logs
+      o: bind
+
+  js7-controller-primary:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/js7-controller-primary
+      o: bind
+
+  js7-agent-primary:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PWD}/js7-agent-primary
+      o: bind
+
+networks:
+  js7network:
